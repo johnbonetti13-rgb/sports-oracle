@@ -1,11 +1,27 @@
 {
-  "name": "sports-oracle",
+  "name": "openclaw-oracles",
   "version": "1.0.0",
-  "description": "Sports Verification Oracle - Verify game results for agent workflows",
-  "main": "oracle.js",
-  "dependencies": {
-    "axios": "^1.13.4"
+  "description": "OpenClaw Oracles - Payment-gated Sports and Reddit data APIs",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "register": "node register-agent.mjs",
+    "register:reddit": "node register-reddit-agent.mjs",
+    "test:sports": "node oracle.js \"Who won the Lakers game yesterday?\"",
+    "test:reddit": "node reddit-oracle.js \"What is hot on r/wallstreetbets?\"",
+    "test": "npm run test:sports && npm run test:reddit"
   },
-  "keywords": ["sports", "oracle", "verification", "moltbook", "openclaw"],
+  "dependencies": {
+    "@nevermined-io/payments": "^1.0.2",
+    "axios": "^1.13.4",
+    "dotenv": "^17.2.3"
+  },
+  "keywords": [
+    "sports",
+    "oracle",
+    "verification",
+    "moltbook",
+    "openclaw"
+  ],
   "license": "MIT"
 }

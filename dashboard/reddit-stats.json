@@ -1,0 +1,61 @@
+{
+  "totalQueries": 2,
+  "todayQueries": 2,
+  "successCount": 2,
+  "errorCount": 0,
+  "hourlyData": [
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "recentQueries": [
+    {
+      "timestamp": "2026-02-01T07:46:46.686Z",
+      "query": {
+        "type": "hot",
+        "subreddit": "programming",
+        "postId": null,
+        "keyword": null,
+        "limit": 10,
+        "originalQuestion": "What is hot on r/programming?"
+      },
+      "success": true,
+      "subreddit": "programming"
+    },
+    {
+      "timestamp": "2026-02-01T07:43:08.069Z",
+      "query": {
+        "type": "hot",
+        "subreddit": "wallstreetbets",
+        "postId": null,
+        "keyword": null,
+        "limit": 10,
+        "originalQuestion": "What is hot on r/wallstreetbets?"
+      },
+      "success": true,
+      "subreddit": "wallstreetbets"
+    }
+  ],
+  "lastReset": "Sun Feb 01 2026"
+}

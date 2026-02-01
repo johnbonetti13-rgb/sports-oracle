@@ -1,0 +1,108 @@
+{
+  "totalQueries": 6,
+  "todayQueries": 3,
+  "successCount": 2,
+  "errorCount": 4,
+  "confidenceSum": 1.5,
+  "hourlyData": [
+    2,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "recentQueries": [
+    {
+      "timestamp": "2026-02-01T07:43:15.903Z",
+      "query": {
+        "team": "Los Angeles Lakers",
+        "opponent": null,
+        "date": "2026-01-31",
+        "originalQuestion": "Who won the Lakers game yesterday?"
+      },
+      "verified": false,
+      "confidence": 0,
+      "error": "event_not_found_on_date"
+    },
+    {
+      "timestamp": "2026-02-01T06:41:29.976Z",
+      "query": {
+        "team": "Los Angeles Lakers",
+        "opponent": null,
+        "date": "2026-01-19",
+        "originalQuestion": "Who won the Lakers game on 2026-01-19?"
+      },
+      "verified": true,
+      "confidence": 0.75,
+      "winner": "Los Angeles Lakers"
+    },
+    {
+      "timestamp": "2026-02-01T06:41:21.210Z",
+      "query": {
+        "team": "Boston Celtics",
+        "opponent": null,
+        "date": "2026-01-30",
+        "originalQuestion": "Who won the Celtics game on 2026-01-30?"
+      },
+      "verified": false,
+      "confidence": 0,
+      "error": "event_not_found_on_date"
+    },
+    {
+      "timestamp": "2026-02-01T05:20:55.537Z",
+      "query": {
+        "team": "Warriors",
+        "opponent": null,
+        "date": "2026-01-25",
+        "originalQuestion": "Warriors game on 2026-01-25"
+      },
+      "verified": false,
+      "confidence": 0,
+      "error": "event_not_found_on_date"
+    },
+    {
+      "timestamp": "2026-02-01T05:20:55.090Z",
+      "query": {
+        "team": "Celtics",
+        "opponent": null,
+        "date": "2026-01-31",
+        "originalQuestion": "Did the Celtics win yesterday?"
+      },
+      "verified": false,
+      "confidence": 0,
+      "error": "team_not_found"
+    },
+    {
+      "timestamp": "2026-02-01T05:20:47.771Z",
+      "query": {
+        "team": "Los Angeles Lakers",
+        "opponent": null,
+        "date": "2026-01-19",
+        "originalQuestion": "Who won the Los Angeles Lakers game on 2026-01-19?"
+      },
+      "verified": true,
+      "confidence": 0.75,
+      "winner": "Los Angeles Lakers"
+    }
+  ],
+  "lastReset": "Sun Feb 01 2026"
+}

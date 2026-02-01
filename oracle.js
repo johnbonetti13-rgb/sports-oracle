@@ -6,6 +6,183 @@
  */
 
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+// Stats file for dashboard
+const STATS_FILE = path.join(__dirname, 'dashboard', 'stats.json');
+
+// =============================================================================
+// SAFETY RAILS - Protection for the Agent Economy
+// =============================================================================
+
+const SAFETY_LIMITS = {
+  maxDailyLoss: 100,          // $100 max daily financial exposure
+  maxConsecutiveErrors: 5,     // Circuit breaker after 5 consecutive errors
+  minConfidenceFloor: 0.5,     // Never report confidence below 0.5
+  maxQueriesPerMinute: 60,     // Rate limit (TheSportsDB allows 100/min)
+  maxQueriesPerDay: 1000,      // Daily query limit
+};
+
+// Team name normalization for better success rate
+const TEAM_ALIASES = {
+  // NBA
+  'celtics': 'Boston Celtics',
+  'lakers': 'Los Angeles Lakers',
+  'warriors': 'Golden State Warriors',
+  'bulls': 'Chicago Bulls',
+  'heat': 'Miami Heat',
+  'nets': 'Brooklyn Nets',
+  'knicks': 'New York Knicks',
+  'sixers': 'Philadelphia 76ers',
+  '76ers': 'Philadelphia 76ers',
+  'bucks': 'Milwaukee Bucks',
+  'suns': 'Phoenix Suns',
+  'mavs': 'Dallas Mavericks',
+  'mavericks': 'Dallas Mavericks',
+  'nuggets': 'Denver Nuggets',
+  'clippers': 'Los Angeles Clippers',
+  'rockets': 'Houston Rockets',
+  'spurs': 'San Antonio Spurs',
+  // NFL
+  'chiefs': 'Kansas City Chiefs',
+  'eagles': 'Philadelphia Eagles',
+  'cowboys': 'Dallas Cowboys',
+  'packers': 'Green Bay Packers',
+  'niners': 'San Francisco 49ers',
+  '49ers': 'San Francisco 49ers',
+  'bills': 'Buffalo Bills',
+  'ravens': 'Baltimore Ravens',
+  'bengals': 'Cincinnati Bengals',
+  // MLB
+  'yankees': 'New York Yankees',
+  'dodgers': 'Los Angeles Dodgers',
+  'red sox': 'Boston Red Sox',
+  'cubs': 'Chicago Cubs',
+  // NHL
+  'bruins': 'Boston Bruins',
+  'rangers': 'New York Rangers',
+  'maple leafs': 'Toronto Maple Leafs',
+  'canadiens': 'Montreal Canadiens',
+};
+
+/**
+ * Normalize team name using aliases
+ * @param {string} teamName - Raw team name
+ * @returns {string} Normalized team name
+ */
+function normalizeTeamName(teamName) {
+  if (!teamName) return teamName;
+  const lower = teamName.toLowerCase().trim();
+  return TEAM_ALIASES[lower] || teamName;
+}
+
+/**
+ * Check if we're operating within safety limits
+ * @returns {Object} { safe: boolean, reason?: string }
+ */
+function checkSafetyLimits() {
+  const stats = loadStats();
+
+  // Check consecutive errors (circuit breaker)
+  const recentQueries = stats.recentQueries.slice(0, SAFETY_LIMITS.maxConsecutiveErrors);
+  const consecutiveErrors = recentQueries.filter(q => !q.verified).length;
+
+  if (recentQueries.length >= SAFETY_LIMITS.maxConsecutiveErrors &&
+      consecutiveErrors === SAFETY_LIMITS.maxConsecutiveErrors) {
+    return {
+      safe: false,
+      reason: 'circuit_breaker_tripped',
+      message: `${SAFETY_LIMITS.maxConsecutiveErrors} consecutive errors detected. Operations paused.`
+    };
+  }
+
+  // Check daily query limit
+  if (stats.todayQueries >= SAFETY_LIMITS.maxQueriesPerDay) {
+    return {
+      safe: false,
+      reason: 'daily_limit_reached',
+      message: `Daily query limit (${SAFETY_LIMITS.maxQueriesPerDay}) reached.`
+    };
+  }
+
+  return { safe: true };
+}
+
+/**
+ * Apply confidence floor - never go below minimum
+ * @param {number} confidence - Raw confidence
+ * @returns {number} Adjusted confidence
+ */
+function applyConfidenceFloor(confidence) {
+  if (confidence > 0 && confidence < SAFETY_LIMITS.minConfidenceFloor) {
+    return SAFETY_LIMITS.minConfidenceFloor;
+  }
+  return confidence;
+}
+
+// Load or initialize stats
+function loadStats() {
+  try {
+    if (fs.existsSync(STATS_FILE)) {
+      return JSON.parse(fs.readFileSync(STATS_FILE, 'utf8'));
+    }
+  } catch (e) { /* ignore */ }
+  return {
+    totalQueries: 0,
+    todayQueries: 0,
+    successCount: 0,
+    errorCount: 0,
+    confidenceSum: 0,
+    hourlyData: new Array(24).fill(0),
+    recentQueries: [],
+    lastReset: new Date().toDateString()
+  };
+}
+
+// Save stats
+function saveStats(stats) {
+  try {
+    fs.mkdirSync(path.dirname(STATS_FILE), { recursive: true });
+    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
+  } catch (e) { /* ignore */ }
+}
+
+// Log a query result
+function logQuery(result) {
+  const stats = loadStats();
+
+  // Reset daily counters if new day
+  if (stats.lastReset !== new Date().toDateString()) {
+    stats.todayQueries = 0;
+    stats.hourlyData = new Array(24).fill(0);
+    stats.lastReset = new Date().toDateString();
+  }
+
+  stats.totalQueries++;
+  stats.todayQueries++;
+  stats.hourlyData[new Date().getHours()]++;
+
+  if (result.verified) {
+    stats.successCount++;
+    stats.confidenceSum += result.confidence || 0;
+  } else {
+    stats.errorCount++;
+  }
+
+  // Keep last 50 queries
+  stats.recentQueries.unshift({
+    timestamp: new Date().toISOString(),
+    query: result.query,
+    verified: result.verified,
+    confidence: result.confidence,
+    winner: result.result?.winner,
+    error: result.error
+  });
+  stats.recentQueries = stats.recentQueries.slice(0, 50);
+
+  saveStats(stats);
+}
 
 // TheSportsDB - Free tier (no API key required for basic queries)
 const SPORTSDB_BASE = 'https://www.thesportsdb.com/api/v1/json/3';
@@ -200,10 +377,32 @@ function parseQuestion(question) {
  * @returns {Object} Oracle response
  */
 async function askOracle(question) {
+  // SAFETY CHECK: Verify we're within limits
+  const safetyCheck = checkSafetyLimits();
+  if (!safetyCheck.safe) {
+    console.error(`🛑 SAFETY RAIL: ${safetyCheck.reason}`);
+    return {
+      verified: false,
+      confidence: 0,
+      error: safetyCheck.reason,
+      message: safetyCheck.message,
+      safetyTriggered: true,
+      timestamp: new Date().toISOString()
+    };
+  }
+
   const parsed = parseQuestion(question);
 
+  // Normalize team name for better success rate
+  if (parsed.team) {
+    parsed.team = normalizeTeamName(parsed.team);
+  }
+  if (parsed.opponent) {
+    parsed.opponent = normalizeTeamName(parsed.opponent);
+  }
+
   if (!parsed.team) {
-    return {
+    const result = {
       verified: false,
       confidence: 0,
       error: 'could_not_parse_team_name',
@@ -211,9 +410,19 @@ async function askOracle(question) {
       parsed,
       timestamp: new Date().toISOString()
     };
+    logQuery(result);
+    return result;
   }
 
-  return await verifyResult(parsed);
+  const result = await verifyResult(parsed);
+
+  // Apply confidence floor if verified
+  if (result.verified && result.confidence > 0) {
+    result.confidence = applyConfidenceFloor(result.confidence);
+  }
+
+  logQuery(result);
+  return result;
 }
 
 // Export for use as a module
@@ -221,7 +430,12 @@ module.exports = {
   askOracle,
   verifyResult,
   parseQuestion,
-  querySportsDB
+  querySportsDB,
+  // Safety and utility exports
+  normalizeTeamName,
+  checkSafetyLimits,
+  SAFETY_LIMITS,
+  TEAM_ALIASES
 };
 
 // CLI usage
