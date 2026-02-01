@@ -57,9 +57,9 @@ async function registerAgent() {
     // Agent API
     const agentApi = {
       endpoints: [
-        { POST: 'https://oracles.openclaw.ai/api/reddit' },
+        { POST: 'https://web-production-159d9.up.railway.app/api/reddit' },
       ],
-      agentDefinitionUrl: 'https://oracles.openclaw.ai/openapi.json',
+      agentDefinitionUrl: 'https://web-production-159d9.up.railway.app/openapi.json',
     };
 
     // Plan metadata
