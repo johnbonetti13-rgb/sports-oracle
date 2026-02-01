@@ -1,0 +1,11 @@
+{
+  "name": "sports-oracle",
+  "version": "1.0.0",
+  "description": "Sports Verification Oracle - Verify game results for agent workflows",
+  "main": "oracle.js",
+  "dependencies": {
+    "axios": "^1.13.4"
+  },
+  "keywords": ["sports", "oracle", "verification", "moltbook", "openclaw"],
+  "license": "MIT"
+}
